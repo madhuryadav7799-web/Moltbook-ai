@@ -31,8 +31,12 @@ export function useRoomStream({ roomId, onMessages }: UseRoomStreamOptions) {
       try {
         const msgs = await getRoomMessages(roomId);
         onMessagesRef.current(msgs);
-      } catch (_) {
-        // swallow – backend may not be running in dev
+      } catch (err) {
+        // Silently suppress polling errors – the backend may not be reachable
+        // in dev or the room may not exist yet.
+        if (process.env.NODE_ENV === "development") {
+          console.debug("[useRoomStream] poll error:", err);
+        }
       }
     };
     poll();
@@ -79,8 +83,12 @@ export function useRoomStream({ roomId, onMessages }: UseRoomStreamOptions) {
           // Treat as an incremental append – fetch full list to keep sorted
           getRoomMessages(roomId)
             .then((msgs) => onMessagesRef.current(msgs))
-            .catch(() => {
-              /* ignore */
+            .catch((err) => {
+              // Silently suppress fetch errors triggered by WS messages; the main
+              // polling loop will recover. Log in development for easier debugging.
+              if (process.env.NODE_ENV === "development") {
+                console.debug("[useRoomStream] incremental fetch error:", err);
+              }
             });
         }
       } catch {

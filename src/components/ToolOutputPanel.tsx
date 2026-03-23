@@ -1,6 +1,6 @@
 "use client";
 
-import { Message, ToolOutput } from "@/lib/apiClient";
+import { Message } from "@/lib/apiClient";
 
 interface ToolOutputPanelProps {
   messages: Message[];
@@ -15,19 +15,29 @@ interface FlatOutput {
   duration_ms?: number;
 }
 
+/** Extended Message shape that may include usage stats from the API. */
+interface MessageWithUsage extends Message {
+  usage?: {
+    total_tokens?: number;
+    prompt_tokens?: number;
+    completion_tokens?: number;
+    cost_usd?: number;
+  };
+}
+
 function computeStats(messages: Message[]) {
   let totalTokens = 0;
   let promptTokens = 0;
   let completionTokens = 0;
   let costUsd = 0;
 
-  for (const msg of messages) {
-    const stats = (msg as unknown as { usage?: { total_tokens?: number; prompt_tokens?: number; completion_tokens?: number; cost_usd?: number } }).usage;
-    if (stats) {
-      totalTokens += stats.total_tokens ?? 0;
-      promptTokens += stats.prompt_tokens ?? 0;
-      completionTokens += stats.completion_tokens ?? 0;
-      costUsd += stats.cost_usd ?? 0;
+  for (const rawMsg of messages) {
+    const msg = rawMsg as MessageWithUsage;
+    if (msg.usage) {
+      totalTokens += msg.usage.total_tokens ?? 0;
+      promptTokens += msg.usage.prompt_tokens ?? 0;
+      completionTokens += msg.usage.completion_tokens ?? 0;
+      costUsd += msg.usage.cost_usd ?? 0;
     }
   }
   return { totalTokens, promptTokens, completionTokens, costUsd };

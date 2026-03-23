@@ -53,7 +53,7 @@ export default function RoomPage() {
         setRoomAgents(
           roomData.agent_ids
             .map((id) => agentMap.get(id))
-            .filter(Boolean) as Agent[]
+            .filter((a): a is Agent => a !== undefined)
         );
         setMessages(msgs);
       } catch (err) {
